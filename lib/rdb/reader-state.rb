@@ -1,11 +1,10 @@
 module RDB
   class ReaderState
     attr_accessor :database, :key, :type, :expiration, :info
-    attr_reader :callbacks, :filter
+    attr_reader :callbacks
 
-    def initialize(callbacks = nil, filter = nil)
+    def initialize(callbacks = nil)
       @callbacks = callbacks || EmptyCallbacks.new
-      @filter = filter
     end
 
     def key_expires?

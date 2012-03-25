@@ -13,27 +13,22 @@ require 'rdb'
 class MyCallbacks
   include RDB::ReaderCallbacks
 
-  def set(key, value, state)
-    puts "SET \"#{key}\" \"#{value}\""
-  end
-end
-
-class MyFilter
-  include RDB::ObjectFilter
-
   KEY_SELECTOR = Regexp.compile(/user:\d+/)
 
   def accept_object?(state)
     state.database == 15 && KEY_SELECTOR.match(state.key)
   end
+
+  def set(key, value, state)
+    puts "SET \"#{key}\" \"#{value}\""
+  end
 end
 
-RDB::Reader.read_file('dump.rdb', callbacks: MyCallbacks.new, filter: MyFilter.new)
+RDB::Reader.read_file('dump.rdb', callbacks: MyCallbacks.new)
 ```
 
-For more details about callbacks and filters you can take a look at the source code in
-[lib/rdb/callbacks.rb](https://github.com/nrk/redis-rdb/lib/rdb/callbacks.rb) and
-[lib/rdb/filters.rb](https://github.com/nrk/redis-rdb/lib/rdb/filters.rb).
+For more details about the supported callbacks you can take a look at the source code in
+[lib/rdb/callbacks.rb](https://github.com/nrk/redis-rdb/blob/master/lib/rdb/callbacks.rb).
 
 ## Additional notes and credits ##
 

@@ -10,8 +10,10 @@ module RDB
       def read(rdb, options = {})
         rdb_version = read_rdb_version(rdb)
 
-        state = ReaderState.new(options[:callbacks], options[:filter])
-        state.callbacks.start_rdb(rdb_version)
+        state = ReaderState.new(options[:callbacks])
+        callbacks = state.callbacks
+
+        callbacks.start_rdb(rdb_version)
 
         loop do
           state.type = rdb.readbyte
@@ -26,20 +28,20 @@ module RDB
             state.type = rdb.readbyte
 
           when Opcode::SELECTDB
-            state.callbacks.end_database(state.database) unless state.database.nil?
+            callbacks.end_database(state.database) unless state.database.nil?
             state.database, = *read_length(rdb)
-            state.callbacks.start_database(state.database)
+            callbacks.start_database(state.database)
             next
 
           when Opcode::EOF
-            state.callbacks.end_database(state.database) unless state.database.nil?
-            state.callbacks.end_rdb()
+            callbacks.end_database(state.database) unless state.database.nil?
+            callbacks.end_rdb()
             break
           end
 
           state.key = read_string(rdb)
 
-          if state.filter.nil? || state.filter.accept_object?(state)
+          if !callbacks.respond_to?(:accept_object?) || callbacks.accept_object?(state)
             read_object(rdb, state)
             notify_expiration(state) if state.key_expires?
           else
