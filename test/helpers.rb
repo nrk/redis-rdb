@@ -7,13 +7,19 @@ class TestCallbacks
   include RDB::ReaderCallbacks
 
   attr_reader :events, :lists, :sets, :sortedsets, :hashes
+  attr_accessor :filter
 
-  def initialize
+  def initialize(filter = nil)
     @events = []
     @lists = {}
     @sets = {}
     @sortedsets = {}
     @hashes = {}
+    @filter = filter || lambda { |state| true }
+  end
+
+  def accept_object?(state)
+    @filter.call(state)
   end
 
   def start_rdb(version)

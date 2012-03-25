@@ -340,3 +340,24 @@ test 'should read hashes with uncompressed strings encoded as zipmaps' do |optio
 
   assert events == rdb.events
 end
+
+test 'should filter top-level objects before raising events' do |options|
+  options[:callbacks].filter = lambda do |state|
+    state.database == 2 && state.key.match(/second/) && state.mnemonic_type == :string
+  end
+
+  rdb = read_test_rdb('database_multiple_logical_dbs.rdb', options)
+
+  events = [
+    [:start_rdb, [3]],
+    [:start_database, [0]],
+    [:skip_object, ['key_in_zeroth_database']],
+    [:end_database, [0]],
+    [:start_database, [2]],
+    [:set, ['key_in_second_database', 'second']],
+    [:end_database, [2]],
+    [:end_rdb, []],
+  ]
+
+  assert events == rdb.events
+end
