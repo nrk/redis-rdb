@@ -29,7 +29,7 @@ module RDB
 
           when Opcode::SELECTDB
             callbacks.end_database(state.database) unless state.database.nil?
-            state.database, = *read_length(rdb)
+            state.database = read_length(rdb).first
             callbacks.start_database(state.database)
             next
 
