@@ -30,6 +30,27 @@ RDB::Reader.read_file('dump.rdb', callbacks: MyCallbacks.new)
 For more details about the supported callbacks you can take a look at the source code in
 [lib/rdb/callbacks.rb](https://github.com/nrk/redis-rdb/blob/master/lib/rdb/callbacks.rb).
 
+### Data dumpers ###
+
+The `RDB::Dumper` module can be used to create classes that dump the data read from an .rdb file
+into a new file using a different format. An example would be to create an AOF file for Redis or
+to store the data into JSON or CVS. This is an example of using `RDB::Dumpers::AOF`:
+
+```ruby
+require 'rdb'
+
+source = 'test/rdb/database_multiple_logical_dbs.rdb'
+destination = File.basename(source, '.rdb') + '.aof'
+
+dumper = RDB::Dumpers::AOF.new(source, destination)
+dumper.dump
+```
+
+A dumper really is no more than a slightly augmented version of a class defining the callbacks
+for `RDB::Reader` with a few additional helper methods. You can find more about how to implement
+dumpers in [lib/rdb/dumper.rb](https://github.com/nrk/redis-rdb/blob/master/lib/rdb/dumper.rb)
+and [lib/rdb/dumpers/aof.rb](https://github.com/nrk/redis-rdb/blob/master/lib/rdb/dumpers/aof.rb).
+
 ## Additional notes and credits ##
 
 Right now there is still no documentation about the binary format of .rdb files so we used
