@@ -119,7 +119,7 @@ module RDB
     end
 
     def skip_object(key, state)
-      puts "Skipping object for key #{key} of type #{state.mnemonic_type}"
+      puts "Skipping object for key #{key} of type #{state.type}"
     end
   end
 end

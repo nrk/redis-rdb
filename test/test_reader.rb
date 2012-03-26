@@ -343,7 +343,7 @@ end
 
 test 'should filter top-level objects before raising events' do |options|
   options[:callbacks].filter = lambda do |state|
-    state.database == 2 && state.key.match(/second/) && state.mnemonic_type == :string
+    state.database == 2 && state.key.match(/second/) && state.key_type == :string
   end
 
   rdb = read_test_rdb('database_multiple_logical_dbs.rdb', options)

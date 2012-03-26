@@ -16,16 +16,16 @@ module RDB
         callbacks.start_rdb(rdb_version)
 
         loop do
-          state.type = rdb.readbyte
+          state.key_type_id = rdb.readbyte
 
-          case state.type
+          case state.key_type_id
           when Opcode::EXPIRETIME_MS
-            state.expiration = rdb.read(8).unpack('Q').first
-            state.type = rdb.readbyte
+            state.key_expiration = rdb.read(8).unpack('Q').first
+            state.key_type_id = rdb.readbyte
 
           when Opcode::EXPIRETIME
-            state.expiration = rdb.read(4).unpack('L').first * 1000
-            state.type = rdb.readbyte
+            state.key_expiration = rdb.read(4).unpack('L').first * 1000
+            state.key_type_id = rdb.readbyte
 
           when Opcode::SELECTDB
             callbacks.end_database(state.database) unless state.database.nil?
@@ -55,8 +55,8 @@ module RDB
       private
 
       def notify_expiration(state)
-        state.callbacks.pexpireat(state.key, state.expiration, state)
-        state.expiration = nil
+        state.callbacks.pexpireat(state.key, state.key_expiration, state)
+        state.key_expiration = nil
       end
 
       def read_rdb_version(rdb)
@@ -123,7 +123,7 @@ module RDB
       def read_object(rdb, state)
         key, callbacks = state.key, state.callbacks
 
-        case state.type
+        case state.key_type_id
         when Type::STRING
           state.info = { encoding: :string }
           callbacks.set(key, read_string(rdb), state)
@@ -177,11 +177,11 @@ module RDB
 
       def object_reader(rdb, state, &block)
         elements = read_length(rdb).first
-        state.callbacks.send("start_#{state.mnemonic_type}", state.key, elements, state)
+        state.callbacks.send("start_#{state.key_type}", state.key, elements, state)
         elements.times do
           block.call(rdb, state)
         end
-        state.callbacks.send("end_#{state.mnemonic_type}", state.key, state)
+        state.callbacks.send("end_#{state.key_type}", state.key, state)
       end
 
       def read_intset(rdb, state)
@@ -249,7 +249,7 @@ module RDB
         bytes, offset, entries = *buffer.read(10).unpack('LLS')
 
         entries = check_entries.call(entries) unless check_entries.nil?
-        callbacks.send("start_#{state.mnemonic_type}", key, entries, state)
+        callbacks.send("start_#{state.key_type}", key, entries, state)
 
         entries.times do
           block.call(key, buffer, state)
@@ -259,7 +259,7 @@ module RDB
           raise ReaderError, "Invalid ziplist end - #{ziplist_end}"
         end
 
-        callbacks.send("end_#{state.mnemonic_type}", key, state)
+        callbacks.send("end_#{state.key_type}", key, state)
       end
 
       def read_ziplist_entry(rdb, state)
@@ -324,7 +324,7 @@ module RDB
       end
 
       def skip_object(rdb, state)
-        skip = case state.type
+        skip = case state.key_type_id
                when Type::LIST then read_length(rdb).first
                when Type::SET  then read_length(rdb).first
                when Type::ZSET then read_length(rdb).first * 2
@@ -336,7 +336,7 @@ module RDB
                when Type::HASH_ZIPMAP  then 1
                when Type::HASH_ZIPLIST then 1
                else
-                 raise ReaderError, "Trying to skip an unknown object type - #{type}"
+                 raise ReaderError, "Trying to skip an unknown object type - #{state.key_type_id}"
                end
 
         callbacks = state.callbacks
