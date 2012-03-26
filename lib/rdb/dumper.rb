@@ -15,7 +15,7 @@ module RDB
 
     def with_streams(&block)
       input = open(@source, 'rb') unless @source.kind_of? IO
-      output = open(@destination, 'wb') unless @source.kind_of? IO
+      output = open(@destination, 'wb') unless @destination.kind_of? IO
 
       begin
         block.call(input, output)
