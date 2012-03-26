@@ -19,7 +19,7 @@ module RDB
 
       begin
         block.call(input, output)
-      rescue
+      ensure
         input.close
         output.close
       end
