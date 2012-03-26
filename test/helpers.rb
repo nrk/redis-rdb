@@ -18,7 +18,7 @@ class TestCallbacks
     @filter = filter || lambda { |state| true }
   end
 
-  def accept_object?(state)
+  def accept_key?(state)
     @filter.call(state)
   end
 

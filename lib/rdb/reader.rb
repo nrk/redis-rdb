@@ -41,7 +41,7 @@ module RDB
 
           state.key = read_string(rdb)
 
-          if !callbacks.respond_to?(:accept_object?) || callbacks.accept_object?(state)
+          if !callbacks.respond_to?(:accept_key?) || callbacks.accept_key?(state)
             read_object(rdb, state)
             notify_expiration(state) if state.key_expires?
           else

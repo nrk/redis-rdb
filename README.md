@@ -15,7 +15,7 @@ class MyCallbacks
 
   KEY_SELECTOR = Regexp.compile(/user:\d+/)
 
-  def accept_object?(state)
+  def accept_key?(state)
     state.database == 15 && KEY_SELECTOR.match(state.key)
   end
 
