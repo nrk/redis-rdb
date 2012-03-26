@@ -17,6 +17,7 @@ module RDB
 
         loop do
           state.key_type_id = rdb.readbyte
+          state.info = {}
 
           case state.key_type_id
           when Opcode::EXPIRETIME_MS
@@ -47,8 +48,6 @@ module RDB
           else
             skip_object(rdb, state)
           end
-
-          state.info = nil
         end
       end
 
@@ -123,23 +122,23 @@ module RDB
 
         case state.key_type_id
         when Type::STRING
-          state.info = { encoding: :string }
+          state.info[:encoding] = :string
           callbacks.set(key, read_string(rdb), state)
 
         when Type::LIST
-          state.info = { encoding: :linkedlist }
+          state.info[:encoding] = :linkedlist
           object_reader(rdb, state) do
             callbacks.rpush(key, read_string(rdb), state)
           end
 
         when Type::SET
-          state.info = { encoding: :hashtable }
+          state.info[:encoding] = :hashtable
           object_reader(rdb, state) do
             callbacks.sadd(key, read_string(rdb), state)
           end
 
         when Type::ZSET
-          state.info = { encoding: :skiplist }
+          state.info[:encoding] = :skiplist
           object_reader(rdb, state) do
             value = read_string(rdb)
             score = rdb.read(rdb.readbyte)
@@ -147,7 +146,7 @@ module RDB
           end
 
         when Type::HASH
-          state.info = { encoding: :hashtable }
+          state.info[:encoding] = :hashtable
           object_reader(rdb, state) do
             callbacks.hset(key, read_string(rdb), read_string(rdb), state)
           end
@@ -175,6 +174,8 @@ module RDB
 
       def object_reader(rdb, state, &block)
         elements = read_length(rdb).first
+        state.info[:length] = elements
+
         state.callbacks.send("start_#{state.key_type}", state.key, elements, state)
         elements.times do
           block.call(rdb, state)
@@ -186,11 +187,15 @@ module RDB
         key, callbacks = state.key, state.callbacks
         buffer = StringIO.new(read_string(rdb))
 
-        state.info = { encoding: :intset, encoded_size: buffer.length }
         encoding, entries = *buffer.read(8).unpack('LL')
 
-        callbacks.start_set(key, entries, state)
+        state.info.merge({
+          encoding: :intset,
+          encoded_size: buffer.length,
+          length: entries,
+        })
 
+        callbacks.start_set(key, entries, state)
         entries.times do
           entry = case encoding
                   when 2 then buffer.read(2).unpack('S').first
@@ -202,7 +207,6 @@ module RDB
 
           callbacks.sadd(key, entry, state)
         end
-
         callbacks.end_set(key, state)
       end
 
@@ -243,12 +247,16 @@ module RDB
         key, callbacks = state.key, state.callbacks
         buffer = StringIO.new(read_string(rdb))
 
-        state.info = { encoding: :ziplist, encoded_size: buffer.length }
         bytes, offset, entries = *buffer.read(10).unpack('LLS')
-
         entries = check_entries.call(entries) unless check_entries.nil?
-        callbacks.send("start_#{state.key_type}", key, entries, state)
 
+        state.info.merge({
+          encoding: :ziplist,
+          encoded_size: buffer.length,
+          length: entries,
+        })
+
+        callbacks.send("start_#{state.key_type}", key, entries, state)
         entries.times do
           block.call(key, buffer, state)
         end
@@ -256,7 +264,6 @@ module RDB
         if ziplist_end = buffer.readbyte != 255
           raise ReaderError, "Invalid ziplist end - #{ziplist_end}"
         end
-
         callbacks.send("end_#{state.key_type}", key, state)
       end
 
@@ -287,12 +294,15 @@ module RDB
       def read_zipmap(rdb, state)
         key, callbacks = state.key, state.callbacks
         buffer = StringIO.new(read_string(rdb))
-        state.info = { encoding: :zipmap, encoded_size: buffer.length }
 
         entries = buffer.readbyte
+        state.info.merge({
+          encoding: :zipmap,
+          encoded_size: buffer.length,
+          length: entries,
+        })
 
         callbacks.start_hash(key, entries, state)
-
         loop do
           next_length = read_zipmap_next_length(buffer)
           break if next_length.nil?
@@ -307,7 +317,6 @@ module RDB
 
           callbacks.hset(key, field, value, state)
         end
-
         callbacks.end_hash(key, state)
       end
 
