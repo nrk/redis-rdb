@@ -1,5 +1,8 @@
 module RDB
   module LZF
+    class DecompressionError < RuntimeError
+    end
+
     class << self
       def decompress(rdb, compressed_length, expected_length)
         ipos = opos = 0
@@ -35,7 +38,7 @@ module RDB
         end
 
         if opos != expected_length
-          raise Exception, "LZF Decompression error: expected length #{expected_length} does not match #{opos}"
+          raise DecompressionError, "Expected length #{expected_length} does not match #{opos}"
         end
 
         output
