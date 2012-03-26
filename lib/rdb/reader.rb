@@ -189,7 +189,7 @@ module RDB
 
         encoding, entries = *buffer.read(8).unpack('LL')
 
-        state.info.merge({
+        state.info.merge!({
           encoding: :intset,
           encoded_size: buffer.length,
           length: entries,
@@ -250,7 +250,7 @@ module RDB
         bytes, offset, entries = *buffer.read(10).unpack('LLS')
         entries = check_entries.call(entries) unless check_entries.nil?
 
-        state.info.merge({
+        state.info.merge!({
           encoding: :ziplist,
           encoded_size: buffer.length,
           length: entries,
@@ -296,7 +296,7 @@ module RDB
         buffer = StringIO.new(read_string(rdb))
 
         entries = buffer.readbyte
-        state.info.merge({
+        state.info.merge!({
           encoding: :zipmap,
           encoded_size: buffer.length,
           length: entries,
