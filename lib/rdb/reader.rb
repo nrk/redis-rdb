@@ -69,13 +69,11 @@ module RDB
         version
       end
 
-      def ntohl(rdb)
-        value, converted = rdb.read(4).unpack('L').first, 0
-        converted = converted | ((value & 0x000000ff) << 24)
-        converted = converted | ((value & 0xff000000) >> 24)
-        converted = converted | ((value & 0x0000ff00) << 8)
-        converted = converted | ((value & 0x00ff0000) >> 8)
-        converted
+      def ntohl(value)
+        converted = (value & 0x000000ff) << 24
+        converted = converted | (value & 0xff000000) >> 24
+        converted = converted | (value & 0x0000ff00) << 8
+        converted = converted | (value & 0x00ff0000) >> 8
       end
 
       def read_length(rdb)
@@ -88,7 +86,7 @@ module RDB
          when Length::BITS_14
            ((bytes & 0x3F) << 8) | rdb.readbyte
          when Length::BITS_32
-           ntohl(rdb)
+           ntohl(rdb.read(4).unpack('L').first)
          when Length::ENCODED
            encoded = true
            bytes & 0x3F
