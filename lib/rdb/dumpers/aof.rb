@@ -73,8 +73,7 @@ module RDB
 
       def handle(command, state, key, *arguments)
         if variadic?
-          state.info[:buffer].push(*arguments)
-          state.info[:queued] += arguments.length
+          state.info[:buffer].push(arguments)
           flush(command, state) if buffer_full?(state)
         else
           self << serialize_command(command, [key, *arguments])
@@ -83,7 +82,7 @@ module RDB
 
       def flush(command, state)
         if buffer_some?(state)
-          self << serialize_command(command, state.info[:buffer])
+          self << serialize_command(command, [state.key] + state.info[:buffer].flatten)
           reset_buffer(state)
         end
       end
@@ -98,15 +97,15 @@ module RDB
       end
 
       def reset_buffer(state)
-        state.info.merge!({ buffer: [state.key], queued: 0 })
+        state.info[:buffer] = [];
       end
 
       def buffer_some?(state)
-        (state.info[:queued] || 0) > 0
+        state.info[:buffer].length > 0
       end
 
       def buffer_full?(state)
-        (state.info[:queued] || 0) == REDIS_AOF_REWRITE_ITEMS_PER_CMD
+        state.info[:buffer].length == REDIS_AOF_REWRITE_ITEMS_PER_CMD
       end
     end
   end
