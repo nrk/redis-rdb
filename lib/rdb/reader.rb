@@ -22,10 +22,12 @@ module RDB
           case state.key_type_id
           when Opcode::EXPIRETIME_MS
             state.key_expiration = rdb.read(8).unpack('Q').first
+            state.info[:precision] = :millisecond
             state.key_type_id = rdb.readbyte
 
           when Opcode::EXPIRETIME
             state.key_expiration = rdb.read(4).unpack('L').first * 1000
+            state.info[:precision] = :second
             state.key_type_id = rdb.readbyte
 
           when Opcode::SELECTDB

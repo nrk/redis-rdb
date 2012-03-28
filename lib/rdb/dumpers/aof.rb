@@ -1,8 +1,5 @@
 module RDB
   module Dumpers
-    #
-    # TODO: PEXPIREAT is supported only for Redis >= 2.6
-    #
     class AOF
       include Dumper
 
@@ -13,7 +10,13 @@ module RDB
       end
 
       def pexpireat(key, expiration, state)
-        self << serialize_command(:pexpireat, [key, expiration])
+        command = if state.info[:precision] == :second
+          expiration = (expiration / 1000).to_i
+          :pexpire
+        else
+          :pexpireat
+        end
+        self << serialize_command(command, [key, expiration])
       end
 
       def set(key, value, state)
