@@ -34,7 +34,7 @@ For more details about the supported callbacks you can take a look at the source
 
 The `RDB::Dumper` module can be used to create classes that dump the data read from an .rdb file
 into a new file using a different format. An example would be to create an AOF file for Redis or
-to store the data into JSON or CVS. This is an example of using `RDB::Dumpers::AOF`:
+to store the data into JSON or CSV. This is an example of using `RDB::Dumpers::AOF`:
 
 ```ruby
 require 'rdb'
