@@ -1,5 +1,9 @@
 module RDB
   module ReaderCallbacks
+    def accept_key?(state)
+      true
+    end
+
     def start_rdb(rdb_version); end
 
     def end_rdb(); end
