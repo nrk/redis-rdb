@@ -14,7 +14,7 @@ test 'should handle empty databases' do |options|
   rdb = read_test_rdb('database_empty.rdb', options)
 
   events = [
-    [:start_rdb, [3]],
+    [:start_rdb, [6]],
     [:end_rdb, []],
   ]
 
@@ -61,15 +61,16 @@ test 'should read keys and their expiration' do |options|
   rdb = read_test_rdb('keys_with_expiration.rdb', options)
 
   events = [
-    [:start_rdb, [3]],
+    [:start_rdb, [4]],
     [:start_database, [0]],
-    [:set, ['expires_ms_precision', '2022-12-25 10:11:12.000573']],
-    [:pexpireat, ['expires_ms_precision', 1671943272573000]],
+    [:set, ['expires_ms_precision', '2022-12-25 10:11:12.573 UTC']],
+    [:pexpireat, ['expires_ms_precision', 1671963072573000]],
     [:end_database, [0]],
     [:end_rdb, []],
   ]
 
   assert events == rdb.events
+  assert Time.parse(rdb.events[2][1][1]) == pexpireat_to_time(rdb.events[3][1][1])
 end
 
 test 'should read LZF-compressed key strings' do |options|
@@ -118,12 +119,32 @@ test 'should read lists with integers serialized as ziplists' do |options|
   rdb = read_test_rdb('list_of_integers_as_ziplist.rdb', options)
 
   events = [
-    [:start_rdb, [3]],
+    [:start_rdb, [6]],
     [:start_database, [0]],
-    [:start_list, ['ziplist_with_integers', 4]],
+    [:start_list, ['ziplist_with_integers', 24]],
+    [:rpush, ['ziplist_with_integers', 0]],
+    [:rpush, ['ziplist_with_integers', 1]],
+    [:rpush, ['ziplist_with_integers', 2]],
+    [:rpush, ['ziplist_with_integers', 3]],
+    [:rpush, ['ziplist_with_integers', 4]],
+    [:rpush, ['ziplist_with_integers', 5]],
+    [:rpush, ['ziplist_with_integers', 6]],
+    [:rpush, ['ziplist_with_integers', 7]],
+    [:rpush, ['ziplist_with_integers', 8]],
+    [:rpush, ['ziplist_with_integers', 9]],
+    [:rpush, ['ziplist_with_integers', 10]],
+    [:rpush, ['ziplist_with_integers', 11]],
+    [:rpush, ['ziplist_with_integers', 12]],
+    [:rpush, ['ziplist_with_integers', -2]],
+    [:rpush, ['ziplist_with_integers', 13]],
+    [:rpush, ['ziplist_with_integers', 25]],
+    [:rpush, ['ziplist_with_integers', -61]],
     [:rpush, ['ziplist_with_integers', 63]],
     [:rpush, ['ziplist_with_integers', 16380]],
-    [:rpush, ['ziplist_with_integers', 65535]],
+    [:rpush, ['ziplist_with_integers', 49536]],
+    [:rpush, ['ziplist_with_integers', 16777008]],
+    [:rpush, ['ziplist_with_integers', -16773840]],
+    [:rpush, ['ziplist_with_integers', 1073741872]],
     [:rpush, ['ziplist_with_integers', 9223372036854775807]],
     [:end_list, ['ziplist_with_integers']],
     [:end_database, [0]],
@@ -334,6 +355,38 @@ test 'should read hashes with uncompressed strings encoded as zipmaps' do |optio
     [:hset, ['zimap_doesnt_compress', 'MKD1G6', '2']],
     [:hset, ['zimap_doesnt_compress', 'YNNXK', 'F7TI']],
     [:end_hash, ['zimap_doesnt_compress']],
+    [:end_database, [0]],
+    [:end_rdb, []],
+  ]
+
+  assert events == rdb.events
+end
+
+test 'should handle hashes with values between 253 and 255 bytes encoded as zipmaps' do |options|
+  rdb = read_test_rdb('hash_with_big_values.rdb', options)
+
+  events = [
+    [:start_rdb, [2]],
+    [:start_database, [0]],
+    [:start_hash, ['zipmap_with_big_values', 4]],
+    [:hset, ['zipmap_with_big_values', '253bytes', 'NYKK5QA4TDYJFZH0FCVT39DWI89IH7HV9HV162MULYY9S6H67MGS6YZJ54Q2NISW'+
+                                                   '9U69VC6ZK3OJV6J095P0P5YNSEHGCBJGYNZ8BPK3GEFBB8ZMGPT2Y33WNSETHINM'+
+                                                   'SZ4VKWUE8CXE0Y9FO7L5ZZ02EO26TLXF5NUQ0KMA98973QY62ZO1M1WDDZNS25F3'+
+                                                   '7KGBQ8W4R5V1YJRR2XNSQKZ4VY7GW6X038UYQG30ZM0JY1NNMJ12BKQPF2IDQ']],
+    [:hset, ['zipmap_with_big_values', '254bytes', 'IZ3PNCQQV5RG4XOAXDN7IPWJKEK0LWRARBE3393UYD89PSQFC40AG4RCNW2M4YAV'+
+                                                   'JR0WD8AVO2F8KFDGUV0TGU8GF8M2HZLZ9RDX6V0XKIOXJJ3EMWQGFEY7E56RAOPT'+
+                                                   'A60G6SQRZ59ZBUKA6OMEW3K0LH464C7XKAX3K8AXDUX63VGX99JDCW1W2KTXPQRN'+
+                                                   '1R1PY5LXNXPW7AAIYUM2PUKN2YN2MXWS5HR8TPMKYJIFTLK2DNQNGTVAWMULON']],
+    [:hset, ['zipmap_with_big_values', '255bytes', '6EUW8XSNBHMEPY991GZVZH4ITUQVKXQYL7UBYS614RDQSE7BDRUW00M6Y4W6WUQB'+
+                                                   'DFVHH6V2EIAEQGLV72K4UY7XXKL6K6XH6IN4QVS15GU1AAH9UI40UXEA8IZ5CZRR'+
+                                                   'K6SAV3R3X283O2OO9KG4K0DG0HZX1MLFDQHXGCC96M9YUVKXOEC5X35Q4EKET0SD'+
+                                                   'FDSBF1QKGAVS9202EL7MP2KPOYAUKU1SZJW5OP30WAPSM9OG97EBHW2XOWGICZG']],
+    [:hset, ['zipmap_with_big_values', '300bytes', 'IJXP54329MQ96A2M28QF6SFX3XGNWGAII3M32MSIMR0O478AMZKNXDUYD5JGMHJR'+
+                                                   'B9A85RZ3DC3AIS62YSDW2BDJ97IBSH7FKOVFWKJYS7XBMIBX0Z1WNLQRY7D27PFP'+
+                                                   'BBGBDFDCKL0FIOBYEADX6G5UK3B0XYMGS0379GRY6F0FY5Q9JUCJLGOGDNNP8XW3'+
+                                                   'SJX2L872UJZZL8G871G9THKYQ2WKPFEBIHOOTIGDNWC15NL5324W8FYDP97JHKCS'+
+                                                   'MLWXNMSTYIUE7F22ZGR4NZK3T0UTBZ2AFRCT5LMT3P6B']],
+    [:end_hash, ['zipmap_with_big_values']],
     [:end_database, [0]],
     [:end_rdb, []],
   ]

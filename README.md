@@ -51,13 +51,22 @@ for `RDB::Reader` with a few additional helper methods. You can find more about 
 dumpers in [lib/rdb/dumper.rb](https://github.com/nrk/redis-rdb/blob/master/lib/rdb/dumper.rb)
 and [lib/rdb/dumpers/aof.rb](https://github.com/nrk/redis-rdb/blob/master/lib/rdb/dumpers/aof.rb).
 
+## RDB file format ##
+
+Right now there is still no official documentation about the binary format of .rdb files beside
+the code in [rdb.c](https://github.com/antirez/redis/blob/unstable/src/rdb.c) as the reference
+implementation.
+
+[An unofficial](https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format)
+but comprehensive description of the RDB format has been recently made available, but there is
+still no official documentation about it beside the actual implementation that can be found in
+[rdb.c](https://github.com/antirez/redis/blob/unstable/src/rdb.c).
+
 ## Additional notes and credits ##
 
-Right now there is still no documentation about the binary format of .rdb files so we used
-the code in [rdb.c](https://github.com/antirez/redis/blob/unstable/src/rdb.c) as the reference
-implementation. Credit goes also to [sripathikrishnan](https://github.com/sripathikrishnan),
-his work on the [redis-rdb-tools](https://github.com/sripathikrishnan/redis-rdb-tools) Python
-library was quite an inspiration for the final design of `RDB::Reader` and we also reused the
+Credit goes to [sripathikrishnan](https://github.com/sripathikrishnan) for his work on the
+[redis-rdb-tools](https://github.com/sripathikrishnan/redis-rdb-tools) Python library that
+proved to be quite an inspiration for the final design of `RDB::Reader`.We also reused the
 .rdb files shipped with his project for testing.
 
 ## Dependencies ##

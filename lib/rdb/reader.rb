@@ -21,12 +21,12 @@ module RDB
 
           case state.key_type_id
           when Opcode::EXPIRETIME_MS
-            state.key_expiration = rdb.read(8).unpack('Q').first
+            state.key_expiration = rdb.read(8).unpack('Q').first * 1000
             state.info[:precision] = :millisecond
             state.key_type_id = rdb.readbyte
 
           when Opcode::EXPIRETIME
-            state.key_expiration = rdb.read(4).unpack('L').first * 1000
+            state.key_expiration = rdb.read(4).unpack('L').first * 1000000
             state.info[:precision] = :second
             state.key_type_id = rdb.readbyte
 
@@ -65,7 +65,7 @@ module RDB
         signature, version = rdb_header[0..4], rdb_header[5..9].to_i
 
         raise ReaderError, 'Wrong signature trying to load DB from file' if signature != 'REDIS'
-        raise ReaderError, "Can't handle RDB format version #{version}" if version < 1 or version > 4
+        raise ReaderError, "Can't handle RDB format version #{version}" if version < 1 or version > 6
 
         version
       end
@@ -288,6 +288,12 @@ module RDB
           rdb.read(4).unpack('L').first
         elsif header >> 4 == 14
           rdb.read(8).unpack('Q').first
+        elsif header == 240
+          "0#{rdb.read(3)}".unpack('l').first
+        elsif header == 254
+          rdb.read(1).unpack('c').first
+        elsif header >= 241 && header <= 253
+          header - 241
         else
           raise ReaderError, "Invalid entry header - #{header}"
         end
@@ -325,9 +331,8 @@ module RDB
       def read_zipmap_next_length(rdb)
         length = rdb.readbyte
         case length
-        when 1..252 then length
-        when 253 then rdb.read(4).unpack('L').first
-        when 254 then raise ReaderError, "Unexpected value for length field of zipmap - #{length}"
+        when 1..253 then length
+        when 254 then rdb.read(4).unpack('L').first
         else nil
         end
       end

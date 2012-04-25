@@ -3,6 +3,10 @@ def read_test_rdb(filename, options)
   options[:callbacks]
 end
 
+def pexpireat_to_time(pexpireat)
+    Time.at(pexpireat / 1000000, pexpireat % 1000000).utc
+end
+
 class TestCallbacks
   include RDB::ReaderCallbacks
 
