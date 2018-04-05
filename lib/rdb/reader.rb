@@ -289,7 +289,7 @@ module RDB
         elsif header >> 4 == 14
           rdb.read(8).unpack('Q').first
         elsif header == 240
-          "0#{rdb.read(3)}".unpack('l').first
+          "#{rdb.read(3)}\x00".unpack('l').first
         elsif header == 254
           rdb.read(1).unpack('c').first
         elsif header >= 241 && header <= 253
